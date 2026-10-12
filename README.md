@@ -24,7 +24,7 @@ Exported files are saved to your phone's Downloads folder.
 Entries are stored in the browser's `localStorage` on your device. Clearing Chrome's site data erases them, so keep your exported files as backups.
 
 ## Configuration
-The hourly pay rate is `RATE` at the top of `app.js` (currently 11.75).
+Set your hourly pay in the app ("Pay per hour" field). It defaults to 11.75, is saved on the device, and is used in the summary and exports.
 
 ## Development
 No build step. Serve the folder over HTTP and open it:

@@ -1,11 +1,10 @@
-const RATE = 11.75; // pay per hour
-
 const $ = id => document.getElementById(id);
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
 let entries = load('entries', []);
 let running = load('running', null); // start timestamp (ms) or null
+let rate = Number(load('rate', 11.75)); // pay per hour
 let pending = null; // {start,end} awaiting a note
 
 const pad = n => String(n).padStart(2, '0');
@@ -76,7 +75,7 @@ function renderList() {
   const ym = $('month').value;
   const days = monthDays(ym).reverse();
   const total = days.reduce((s, d) => s + d.mins, 0);
-  $('summary').textContent = days.length ? `${hm(total)} · $${(total / 60 * RATE).toFixed(2)}` : '';
+  $('summary').textContent = days.length ? `${hm(total)} · $${(total / 60 * rate).toFixed(2)}` : '';
   const list = $('list');
   list.innerHTML = '';
   if (!days.length) { list.innerHTML = '<p style="color:var(--muted)">No work logged this month.</p>'; return; }
@@ -124,13 +123,13 @@ function buildWorkbook(ym) {
   const totalMins = days.reduce((s, d) => s + d.mins, 0);
   rows.push([]);
   rows.push(['', '', 'Total hours', null]);
-  rows.push(['', '', 'Pay rate', RATE]);
+  rows.push(['', '', 'Pay rate', rate]);
   rows.push(['', '', 'Total pay', null]);
   const hoursRow = last + 2, rateRow = last + 3, payRow = last + 4;
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws[`D${hoursRow}`] = { t: 'n', f: `SUM(D${first}:D${last})`, v: totalMins / 60, z: '0.00' };
-  ws[`D${rateRow}`] = { t: 'n', v: RATE, z: '"$"0.00' };
-  ws[`D${payRow}`] = { t: 'n', f: `D${hoursRow}*D${rateRow}`, v: totalMins / 60 * RATE, z: '"$"0.00' };
+  ws[`D${rateRow}`] = { t: 'n', v: rate, z: '"$"0.00' };
+  ws[`D${payRow}`] = { t: 'n', f: `D${hoursRow}*D${rateRow}`, v: totalMins / 60 * rate, z: '"$"0.00' };
   for (let r = first; r <= last; r++) if (ws[`D${r}`]) ws[`D${r}`].z = '0.00';
   ws['!ref'] = `A1:D${payRow}`;
   ws['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 14 }, { wch: 14 }];
@@ -147,7 +146,16 @@ $('export').onclick = () => {
   $('msg').textContent = `Saved Invoice-${ym}.xlsx to Downloads.`;
 };
 
+$('rate').onchange = () => {
+  const v = parseFloat($('rate').value);
+  if (!(v >= 0)) { $('rate').value = rate; return; }
+  rate = v;
+  save('rate', rate);
+  renderList();
+};
+
 // ---- init ----
+$('rate').value = rate;
 $('month').value = dayKey(Date.now()).slice(0, 7);
 if (running === null && !pending) { /* idle */ }
 render();
